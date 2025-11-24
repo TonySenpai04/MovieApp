@@ -17,10 +17,11 @@ function App() {
   const [error, setError] = useState(null);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [view, setView] = useState("search"); // 'search' or 'favorites'
-  const [trailerUrl, setTrailerUrl] = useState("");
-   const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
-   const handleWatchTrailer = async (movieId) => {
+  const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const [trailerUrl, setTrailerUrl] = useState("");
+
+const handleWatchTrailer = async (movieId) => {
   try {
     const res = await fetch(
       `https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${API_KEY}`
@@ -38,6 +39,7 @@ function App() {
     alert("Failed to fetch trailer");
   }
 };
+
   useEffect(() => {
     const storedFavorites = JSON.parse(localStorage.getItem("favorites")) || [];
     setFavorites(storedFavorites);
@@ -131,68 +133,107 @@ function App() {
 
   const displayedMovies = view === "search" ? movies : favorites;
 
- return (
-  <div className="container mx-auto p-4 flex flex-col items-center text-center">
-    <h1 className="text-4xl font-extrabold mb-6 drop-shadow-2xl">Movie App</h1>
-
-    {/* Tabs */}
-    <div className="tabs tabs-border mb-6">
-      ...
-    </div>
-
-    {/* Search bar */}
-    {view === "search" && <SearchBar onSearch={handleSearch} />}
-
-    {/* Loading / Error / Movie Grid */}
-    {loading && <Spinner />}
-    {error && <ErrorMessage message={error} />}
-    {!loading && !error && displayedMovies.length > 0 && (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
-        {displayedMovies.map((movie) => (
-          <MovieCard
-            key={movie.id}
-            movie={movie}
-            onToggleFavorite={toggleFavorite}
-            isFavorite={isFavorite(movie.id)}
-            onViewDetails={openModal}
-            onWatchTrailer={handleWatchTrailer} 
-          />
-        ))}
+  return (
+    <div className="container mx-auto p-4 flex flex-col items-center text-center">
+      <h1 className="text-4xl font-extrabold mb-6 drop-shadow-2xl">
+        Movie App
+      </h1>
+      <div className="tabs tabs-border mb-6">
+        <a
+          className={`tab text-lg ${view === "search" ? "tab-active" : ""}`}
+          onClick={() => {
+            setView("search");
+            setPage(page);
+          }}
+        >
+          Search / Popular
+        </a>
+        <a
+          className={`tab text-lg ${view === "favorites" ? "tab-active" : ""}`}
+          onClick={() => setView("favorites")}
+        >
+          Favorites ({favorites.length})
+        </a>
       </div>
-    )}
 
-    {/* Pagination */}
-    {view === "search" && totalPages > 1 && (
-      <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
-    )}
-
-    {/* Trailer Modal */}
-    {trailerUrl && (
-      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        <div className="bg-gray-900 p-4 rounded-lg w-11/12 md:w-2/3 lg:w-1/2 relative">
-          <button
-            onClick={() => setTrailerUrl("")}
-            className="absolute top-2 right-2 text-white text-xl"
-          >
-            &times;
-          </button>
-          <div className="aspect-video">
-            <iframe
-              width="100%"
-              height="100%"
-              src={trailerUrl}
-              title="Movie Trailer"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
-          </div>
+      {view === "search" && (
+        <div className="w-full max-w-md mb-6">
+          <SearchBar onSearch={handleSearch} />
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
 
+      {loading && <Spinner />}
+      {error && <ErrorMessage message={error} />}
+      {!loading && !error && displayedMovies.length === 0 && (
+        <div>
+          No movies found.{" "}
+          {view === "favorites"
+            ? "Add some to your favorites!"
+            : "Try a different search."}
+        </div>
+      )}
+      {!loading && !error && displayedMovies.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
+          {displayedMovies.map((movie) => (
+            <MovieCard
+              key={movie.id}
+              movie={movie}
+              onToggleFavorite={toggleFavorite}
+              isFavorite={isFavorite(movie.id)}
+              onViewDetails={openModal}
+              onWatchTrailer={handleWatchTrailer}
+            />
+          ))}
+        </div>
+        
+      )}
+      
+
+      {view === "search" && totalPages > 1 && !loading && !error && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
+
+      {selectedMovie && (
+        <MovieDetailsModal
+          movie={selectedMovie}
+          onClose={closeModal}
+          isFavorite={isFavorite(selectedMovie.id)}
+          onToggleFavorite={() => toggleFavorite(selectedMovie)}
+          onWatchTrailer={handleWatchTrailer} 
+        />
+      )}
+      {trailerUrl && (
+  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div className="bg-gray-900 p-4 rounded-lg w-11/12 md:w-2/3 lg:w-1/2 relative">
+      <button
+        onClick={() => setTrailerUrl("")}
+        className="absolute top-2 right-2 text-white text-xl"
+      >
+        &times;
+      </button>
+      <div className="aspect-video">
+        <iframe
+          width="100%"
+          height="100%"
+          src={trailerUrl}
+          title="Movie Trailer"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
+      </div>
+    </div>
+  </div>
+)}
+
+    </div>
+  );
 }
 
 export default App;
